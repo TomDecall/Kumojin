@@ -50,7 +50,7 @@
             <template v-slot:prepend>
               <q-icon name="event" class="cursor-pointer">
                 <q-popup-proxy cover transition-show="scale" transition-hide="scale">
-                  <q-date v-model="eventDialogCreate.toUpsert.startDate" mask="YYYY-MM-DD HH:mm">
+                  <q-date v-model="eventDialogCreate.toUpsert.startDate" :options="limitStartDateSelection" mask="YYYY-MM-DD HH:mm">
                     <div class="row items-center justify-end">
                       <q-btn v-close-popup label="Close" color="primary" flat />
                     </div>
@@ -76,7 +76,7 @@
             <template v-slot:prepend>
               <q-icon name="event" class="cursor-pointer">
                 <q-popup-proxy cover transition-show="scale" transition-hide="scale">
-                  <q-date v-model="eventDialogCreate.toUpsert.endDate" mask="YYYY-MM-DD HH:mm">
+                  <q-date v-model="eventDialogCreate.toUpsert.endDate" :options="limitEndDateSelection" mask="YYYY-MM-DD HH:mm">
                     <div class="row items-center justify-end">
                       <q-btn v-close-popup label="Close" color="primary" flat />
                     </div>
@@ -139,16 +139,24 @@
       //#region DialogCreateManagement
       const nameRules = EventViewModel.getInputModelNameValidator();
 
-      function dialogShow(toShow: boolean) {
+      function dialogShow() {
         eventDialogCreate.value = eventService.GetEventDialogCreateDefinition();
         eventDialogCreate.value.show = true
-        
+      }
+
+      function limitStartDateSelection(date: Date) {
+        return new Date(date) >= new Date(new Date().setHours(0, 0, 0, 0))
+      }
+
+      function limitEndDateSelection(date: Date) {
+          return new Date(date) >= new Date(eventDialogCreate.value.toUpsert.startDate)
       }
 
       async function createEvent() {
         if (nameRef.value!.validate()) {
-          let result = await eventService.postData(eventDialogCreate.value.toUpsert);
+          await eventService.postData(eventDialogCreate.value.toUpsert);
           NotifyToast.ShowSuccess("Event Sauvegardé")
+          await getEvents();
           eventDialogCreate.value.show = false
         } else {
           NotifyToast.ShowFail("Erreur lors de la validation")
@@ -165,6 +173,8 @@
         getEvents,
         createEvent,
         dialogShow,
+        limitStartDateSelection,
+        limitEndDateSelection
       };
     }
   });
